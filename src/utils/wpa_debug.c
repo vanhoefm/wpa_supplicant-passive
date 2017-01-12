@@ -29,7 +29,7 @@ static FILE *wpa_debug_tracing_file = NULL;
 #endif /* CONFIG_DEBUG_LINUX_TRACING */
 
 
-int wpa_debug_level = MSG_INFO;
+int wpa_debug_level = MSG_DEBUG; // Does not function, overridden somewhere?
 int wpa_debug_show_keys = 0;
 int wpa_debug_timestamp = 0;
 
@@ -206,7 +206,9 @@ void wpa_printf(int level, const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	if (level >= wpa_debug_level) {
+        
+	if (level >= wpa_debug_level) {   //Comment for all debug? Debug level is reset
+                                          // on the phone
 #ifdef CONFIG_ANDROID_LOG
 		__android_log_vprint(wpa_to_android_level(level),
 				     ANDROID_LOG_NAME, fmt, ap);
@@ -232,7 +234,7 @@ void wpa_printf(int level, const char *fmt, ...)
 		}
 #endif /* CONFIG_DEBUG_SYSLOG */
 #endif /* CONFIG_ANDROID_LOG */
-	}
+	} //see line 210
 	va_end(ap);
 
 #ifdef CONFIG_DEBUG_LINUX_TRACING

@@ -97,11 +97,11 @@ void wpa_driver_nl80211_scan_timeout(void *eloop_ctx, void *timeout_ctx)
 {
 	struct wpa_driver_nl80211_data *drv = eloop_ctx;
 
-	wpa_printf(MSG_DEBUG, "nl80211: Scan timeout - try to abort it");
+	wpa_printf(MSG_INFO, "nl80211: Scan timeout - try to abort it (thesis-out)");
 	if (!wpa_driver_nl80211_abort_scan(drv->first_bss))
 		return;
 
-	wpa_printf(MSG_DEBUG, "nl80211: Failed to abort scan");
+	wpa_printf(MSG_INFO, "nl80211: Failed to abort scan (thesis-out)");
 
 	if (drv->ap_scan_as_station != NL80211_IFTYPE_UNSPECIFIED) {
 		wpa_driver_nl80211_set_mode(drv->first_bss,
@@ -109,7 +109,7 @@ void wpa_driver_nl80211_scan_timeout(void *eloop_ctx, void *timeout_ctx)
 		drv->ap_scan_as_station = NL80211_IFTYPE_UNSPECIFIED;
 	}
 
-	wpa_printf(MSG_DEBUG, "nl80211: Try to get scan results");
+	wpa_printf(MSG_INFO, "nl80211: Try to get scan results (thesis-out)");
 	wpa_supplicant_event(timeout_ctx, EVENT_SCAN_RESULTS, NULL);
 }
 
@@ -126,7 +126,8 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 	msg = nl80211_cmd_msg(bss, 0, cmd);
 	if (!msg)
 		return NULL;
-
+        
+#ifdef ACTIVE_SCAN
 	if (params->num_ssids) {
 		struct nlattr *ssids;
 
@@ -143,11 +144,14 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 		}
 		nla_nest_end(msg, ssids);
 	} else {
-		wpa_printf(MSG_DEBUG, "nl80211: Passive scan requested");
+#endif
+		wpa_printf(MSG_INFO, "nl80211: Passive scan requested (thesis-out)");
+#ifdef ACTIVE_SCAN
 	}
+#endif
 
 	if (params->extra_ies) {
-		wpa_hexdump(MSG_MSGDUMP, "nl80211: Scan extra IEs",
+		wpa_hexdump(MSG_INFO, "nl80211: Scan extra IEs (thesis-out)",
 			    params->extra_ies, params->extra_ies_len);
 		if (nla_put(msg, NL80211_ATTR_IE, params->extra_ies_len,
 			    params->extra_ies))
@@ -160,8 +164,8 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 		if (freqs == NULL)
 			goto fail;
 		for (i = 0; params->freqs[i]; i++) {
-			wpa_printf(MSG_MSGDUMP, "nl80211: Scan frequency %u "
-				   "MHz", params->freqs[i]);
+			wpa_printf(MSG_INFO, "nl80211: Scan frequency %u "
+				   "MHz (thesis-out)", params->freqs[i]);
 			if (nla_put_u32(msg, i + 1, params->freqs[i]))
 				goto fail;
 		}
@@ -174,23 +178,23 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 	drv->num_filter_ssids = params->num_filter_ssids;
 
 	if (params->only_new_results) {
-		wpa_printf(MSG_DEBUG, "nl80211: Add NL80211_SCAN_FLAG_FLUSH");
+		wpa_printf(MSG_INFO, "nl80211: Add NL80211_SCAN_FLAG_FLUSH (thesis-out)");
 		scan_flags |= NL80211_SCAN_FLAG_FLUSH;
 	}
 
 	if (params->low_priority && drv->have_low_prio_scan) {
-		wpa_printf(MSG_DEBUG,
-			   "nl80211: Add NL80211_SCAN_FLAG_LOW_PRIORITY");
+		wpa_printf(MSG_INFO,
+			   "nl80211: Add NL80211_SCAN_FLAG_LOW_PRIORITY (thesis-out)");
 		scan_flags |= NL80211_SCAN_FLAG_LOW_PRIORITY;
 	}
 
 	if (params->mac_addr_rand) {
-		wpa_printf(MSG_DEBUG,
-			   "nl80211: Add NL80211_SCAN_FLAG_RANDOM_ADDR");
+		wpa_printf(MSG_INFO,
+			   "nl80211: Add NL80211_SCAN_FLAG_RANDOM_ADDR (thesis-out)");
 		scan_flags |= NL80211_SCAN_FLAG_RANDOM_ADDR;
 
 		if (params->mac_addr) {
-			wpa_printf(MSG_DEBUG, "nl80211: MAC address: " MACSTR,
+			wpa_printf(MSG_INFO, "nl80211: (thesis-out) MAC address: " MACSTR,
 				   MAC2STR(params->mac_addr));
 			if (nla_put(msg, NL80211_ATTR_MAC, ETH_ALEN,
 				    params->mac_addr))
@@ -198,7 +202,7 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 		}
 
 		if (params->mac_addr_mask) {
-			wpa_printf(MSG_DEBUG, "nl80211: MAC address mask: "
+			wpa_printf(MSG_INFO, "nl80211: (thesis-out) MAC address mask: "
 				   MACSTR, MAC2STR(params->mac_addr_mask));
 			if (nla_put(msg, NL80211_ATTR_MAC_MASK, ETH_ALEN,
 				    params->mac_addr_mask))
@@ -231,7 +235,7 @@ int wpa_driver_nl80211_scan(struct i802_bss *bss,
 	int ret = -1, timeout;
 	struct nl_msg *msg = NULL;
 
-	wpa_dbg(drv->ctx, MSG_DEBUG, "nl80211: scan request");
+	wpa_dbg(drv->ctx, MSG_INFO, "nl80211: scan request (thesis-out)");
 	drv->scan_for_auth = 0;
 
 	if (TEST_FAIL())
@@ -244,7 +248,7 @@ int wpa_driver_nl80211_scan(struct i802_bss *bss,
 	if (params->p2p_probe) {
 		struct nlattr *rates;
 
-		wpa_printf(MSG_DEBUG, "nl80211: P2P probe - mask SuppRates");
+		wpa_printf(MSG_INFO, "nl80211: P2P probe - mask SuppRates (thesis-out)");
 
 		rates = nla_nest_start(msg, NL80211_ATTR_SCAN_SUPP_RATES);
 		if (rates == NULL)
@@ -266,7 +270,7 @@ int wpa_driver_nl80211_scan(struct i802_bss *bss,
 	}
 
 	if (params->bssid) {
-		wpa_printf(MSG_DEBUG, "nl80211: Scan for a specific BSSID: "
+		wpa_printf(MSG_INFO, "nl80211: (thesis-out) Scan for a specific BSSID: "
 			   MACSTR, MAC2STR(params->bssid));
 		if (nla_put(msg, NL80211_ATTR_MAC, ETH_ALEN, params->bssid))
 			goto fail;
@@ -275,8 +279,8 @@ int wpa_driver_nl80211_scan(struct i802_bss *bss,
 	ret = send_and_recv_msgs(drv, msg, NULL, NULL);
 	msg = NULL;
 	if (ret) {
-		wpa_printf(MSG_DEBUG, "nl80211: Scan trigger failed: ret=%d "
-			   "(%s)", ret, strerror(-ret));
+		wpa_printf(MSG_INFO, "nl80211: Scan trigger failed: ret=%d "
+			   "(%s) (thesis-out)", ret, strerror(-ret));
 		if (drv->hostapd && is_ap_interface(drv->nlmode)) {
 			enum nl80211_iftype old_mode = drv->nlmode;
 
@@ -312,8 +316,8 @@ int wpa_driver_nl80211_scan(struct i802_bss *bss,
 		 */
 		timeout = 30;
 	}
-	wpa_printf(MSG_DEBUG, "Scan requested (ret=%d) - scan timeout %d "
-		   "seconds", ret, timeout);
+	wpa_printf(MSG_INFO, "Scan requested (ret=%d) - scan timeout %d "
+		   "seconds (thesis-out)", ret, timeout);
 	eloop_cancel_timeout(wpa_driver_nl80211_scan_timeout, drv, drv->ctx);
 	eloop_register_timeout(timeout, 0, wpa_driver_nl80211_scan_timeout,
 			       drv, drv->ctx);
@@ -347,8 +351,8 @@ nl80211_sched_scan_add_scan_plans(struct wpa_driver_nl80211_data *drv,
 		if (!scan_plans[i].interval ||
 		    scan_plans[i].interval >
 		    drv->capa.max_sched_scan_plan_interval) {
-			wpa_printf(MSG_DEBUG,
-				   "nl80211: sched scan plan no. %u: Invalid interval: %u",
+			wpa_printf(MSG_INFO,
+				   "nl80211: sched scan plan no. %u: Invalid interval: %u (thesis-out)",
 				   i, scan_plans[i].interval);
 			return -1;
 		}
@@ -359,8 +363,8 @@ nl80211_sched_scan_add_scan_plans(struct wpa_driver_nl80211_data *drv,
 
 		if (scan_plans[i].iterations >
 		    drv->capa.max_sched_scan_plan_iterations) {
-			wpa_printf(MSG_DEBUG,
-				   "nl80211: sched scan plan no. %u: Invalid number of iterations: %u",
+			wpa_printf(MSG_INFO,
+				   "nl80211: sched scan plan no. %u: Invalid number of iterations: %u (thesis-out)",
 				   i, scan_plans[i].iterations);
 			return -1;
 		}
@@ -383,8 +387,8 @@ nl80211_sched_scan_add_scan_plans(struct wpa_driver_nl80211_data *drv,
 	}
 
 	if (i != params->sched_scan_plans_num - 1) {
-		wpa_printf(MSG_DEBUG,
-			   "nl80211: All sched scan plans but the last must specify number of iterations");
+		wpa_printf(MSG_INFO,
+			   "nl80211: All sched scan plans but the last must specify number of iterations (thesis-out)");
 		return -1;
 	}
 
@@ -408,7 +412,7 @@ int wpa_driver_nl80211_sched_scan(void *priv,
 	struct nl_msg *msg;
 	size_t i;
 
-	wpa_dbg(drv->ctx, MSG_DEBUG, "nl80211: sched_scan request");
+	wpa_dbg(drv->ctx, MSG_INFO, "nl80211: sched_scan request (thesis-out)");
 
 #ifdef ANDROID
 	if (!drv->capa.sched_scan_supported)
@@ -493,12 +497,12 @@ int wpa_driver_nl80211_sched_scan(void *priv,
 
 	msg = NULL;
 	if (ret) {
-		wpa_printf(MSG_DEBUG, "nl80211: Sched scan start failed: "
-			   "ret=%d (%s)", ret, strerror(-ret));
+		wpa_printf(MSG_INFO, "nl80211: Sched scan start failed: "
+			   "ret=%d (%s) (thesis-out)", ret, strerror(-ret));
 		goto fail;
 	}
 
-	wpa_printf(MSG_DEBUG, "nl80211: Sched scan requested (ret=%d)", ret);
+	wpa_printf(MSG_INFO, "nl80211: Sched scan requested (ret=%d) (thesis-out)", ret);
 
 fail:
 	nlmsg_free(msg);
@@ -526,12 +530,12 @@ int wpa_driver_nl80211_stop_sched_scan(void *priv)
 	msg = nl80211_drv_msg(drv, 0, NL80211_CMD_STOP_SCHED_SCAN);
 	ret = send_and_recv_msgs(drv, msg, NULL, NULL);
 	if (ret) {
-		wpa_printf(MSG_DEBUG,
-			   "nl80211: Sched scan stop failed: ret=%d (%s)",
+		wpa_printf(MSG_INFO,
+			   "nl80211: Sched scan stop failed: ret=%d (%s) (thesis-out)",
 			   ret, strerror(-ret));
 	} else {
-		wpa_printf(MSG_DEBUG,
-			   "nl80211: Sched scan stop sent");
+		wpa_printf(MSG_INFO,
+			   "nl80211: Sched scan stop sent (thesis-out)");
 	}
 
 	return ret;
@@ -603,21 +607,21 @@ int bss_info_handler(struct nl_msg *msg, void *arg)
 		    bss[NL80211_BSS_FREQUENCY]) {
 			_arg->assoc_freq =
 				nla_get_u32(bss[NL80211_BSS_FREQUENCY]);
-			wpa_printf(MSG_DEBUG, "nl80211: Associated on %u MHz",
+			wpa_printf(MSG_INFO, "nl80211: Associated on %u MHz (thesis-out)",
 				   _arg->assoc_freq);
 		}
 		if (status == NL80211_BSS_STATUS_IBSS_JOINED &&
 		    bss[NL80211_BSS_FREQUENCY]) {
 			_arg->ibss_freq =
 				nla_get_u32(bss[NL80211_BSS_FREQUENCY]);
-			wpa_printf(MSG_DEBUG, "nl80211: IBSS-joined on %u MHz",
+			wpa_printf(MSG_INFO, "nl80211: IBSS-joined on %u MHz (thesis-out)",
 				   _arg->ibss_freq);
 		}
 		if (status == NL80211_BSS_STATUS_ASSOCIATED &&
 		    bss[NL80211_BSS_BSSID]) {
 			os_memcpy(_arg->assoc_bssid,
 				  nla_data(bss[NL80211_BSS_BSSID]), ETH_ALEN);
-			wpa_printf(MSG_DEBUG, "nl80211: Associated with "
+			wpa_printf(MSG_INFO, "nl80211: (thesis-out) Associated with "
 				   MACSTR, MAC2STR(_arg->assoc_bssid));
 		}
 	}
@@ -716,7 +720,7 @@ int bss_info_handler(struct nl_msg *msg, void *arg)
 			continue;
 
 		/* Same BSSID,SSID was already included in scan results */
-		wpa_printf(MSG_DEBUG, "nl80211: Remove duplicated scan result "
+		wpa_printf(MSG_INFO, "nl80211: (thesis-out) Remove duplicated scan result "
 			   "for " MACSTR, MAC2STR(r->bssid));
 
 		if (((r->flags & WPA_SCAN_ASSOCIATED) &&
@@ -746,8 +750,8 @@ static void clear_state_mismatch(struct wpa_driver_nl80211_data *drv,
 				 const u8 *addr)
 {
 	if (drv->capa.flags & WPA_DRIVER_FLAGS_SME) {
-		wpa_printf(MSG_DEBUG, "nl80211: Clear possible state "
-			   "mismatch (" MACSTR ")", MAC2STR(addr));
+		wpa_printf(MSG_INFO, "nl80211: Clear possible state "
+			   "mismatch (" MACSTR ") (thesis-out)", MAC2STR(addr));
 		wpa_driver_nl80211_mlme(drv, addr,
 					NL80211_CMD_DEAUTHENTICATE,
 					WLAN_REASON_PREV_AUTH_NOT_VALID, 1);
@@ -764,20 +768,20 @@ static void wpa_driver_nl80211_check_bss_status(
 		struct wpa_scan_res *r = res->res[i];
 
 		if (r->flags & WPA_SCAN_ASSOCIATED) {
-			wpa_printf(MSG_DEBUG, "nl80211: Scan results "
+			wpa_printf(MSG_INFO, "nl80211: (thesis-out) Scan results "
 				   "indicate BSS status with " MACSTR
 				   " as associated",
 				   MAC2STR(r->bssid));
 			if (is_sta_interface(drv->nlmode) &&
 			    !drv->associated) {
-				wpa_printf(MSG_DEBUG, "nl80211: Local state "
+				wpa_printf(MSG_INFO, "nl80211: (thesis-out) Local state "
 					   "(not associated) does not match "
 					   "with BSS state");
 				clear_state_mismatch(drv, r->bssid);
 			} else if (is_sta_interface(drv->nlmode) &&
 				   os_memcmp(drv->bssid, r->bssid, ETH_ALEN) !=
 				   0) {
-				wpa_printf(MSG_DEBUG, "nl80211: Local state "
+				wpa_printf(MSG_INFO, "nl80211: (thesis-out) Local state "
 					   "(associated with " MACSTR ") does "
 					   "not match with BSS state",
 					   MAC2STR(drv->bssid));
@@ -810,13 +814,13 @@ nl80211_get_scan_results(struct wpa_driver_nl80211_data *drv)
 	arg.res = res;
 	ret = send_and_recv_msgs(drv, msg, bss_info_handler, &arg);
 	if (ret == 0) {
-		wpa_printf(MSG_DEBUG, "nl80211: Received scan results (%lu "
-			   "BSSes)", (unsigned long) res->num);
+		wpa_printf(MSG_INFO, "nl80211: Received scan results (%lu "
+			   "BSSes) (thesis-out)", (unsigned long) res->num);
 		nl80211_get_noise_for_scan_results(drv, res);
 		return res;
 	}
-	wpa_printf(MSG_DEBUG, "nl80211: Scan result fetch failed: ret=%d "
-		   "(%s)", ret, strerror(-ret));
+	wpa_printf(MSG_INFO, "nl80211: Scan result fetch failed: ret=%d "
+		   "(%s) (thesis-out)", ret, strerror(-ret));
 	wpa_scan_results_free(res);
 	return NULL;
 }
@@ -847,14 +851,14 @@ void nl80211_dump_scan(struct wpa_driver_nl80211_data *drv)
 
 	res = nl80211_get_scan_results(drv);
 	if (res == NULL) {
-		wpa_printf(MSG_DEBUG, "nl80211: Failed to get scan results");
+		wpa_printf(MSG_INFO, "nl80211: Failed to get scan results (thesis-out)");
 		return;
 	}
 
-	wpa_printf(MSG_DEBUG, "nl80211: Scan result dump");
+	wpa_printf(MSG_INFO, "nl80211: Scan result dump (thesis-out)");
 	for (i = 0; i < res->num; i++) {
 		struct wpa_scan_res *r = res->res[i];
-		wpa_printf(MSG_DEBUG, "nl80211: %d/%d " MACSTR "%s",
+		wpa_printf(MSG_INFO, "nl80211: %d/%d " MACSTR "%s (thesis-out)",
 			   (int) i, (int) res->num, MAC2STR(r->bssid),
 			   r->flags & WPA_SCAN_ASSOCIATED ? " [assoc]" : "");
 	}
@@ -870,11 +874,11 @@ int wpa_driver_nl80211_abort_scan(void *priv)
 	int ret;
 	struct nl_msg *msg;
 
-	wpa_printf(MSG_DEBUG, "nl80211: Abort scan");
+	wpa_printf(MSG_INFO, "nl80211: Abort scan (thesis-out)");
 	msg = nl80211_cmd_msg(bss, 0, NL80211_CMD_ABORT_SCAN);
 	ret = send_and_recv_msgs(drv, msg, NULL, NULL);
 	if (ret) {
-		wpa_printf(MSG_DEBUG, "nl80211: Abort scan failed: ret=%d (%s)",
+		wpa_printf(MSG_INFO, "nl80211: Abort scan failed: ret=%d (%s) (thesis-out)",
 			   ret, strerror(-ret));
 	}
 
@@ -926,7 +930,7 @@ int wpa_driver_nl80211_vendor_scan(struct i802_bss *bss,
 	int ret = -1;
 	u64 cookie = 0;
 
-	wpa_dbg(drv->ctx, MSG_DEBUG, "nl80211: vendor scan request");
+	wpa_dbg(drv->ctx, MSG_INFO, "nl80211: vendor scan request (thesis-out-unusual)");
 	drv->scan_for_auth = 0;
 
 	if (!(msg = nl80211_drv_msg(drv, 0, NL80211_CMD_VENDOR)) ||
@@ -987,18 +991,18 @@ int wpa_driver_nl80211_vendor_scan(struct i802_bss *bss,
 	drv->num_filter_ssids = params->num_filter_ssids;
 
 	if (params->low_priority && drv->have_low_prio_scan) {
-		wpa_printf(MSG_DEBUG,
-			   "nl80211: Add NL80211_SCAN_FLAG_LOW_PRIORITY");
+		wpa_printf(MSG_INFO,
+			   "nl80211: Add NL80211_SCAN_FLAG_LOW_PRIORITY (thesis-out-unusual)");
 		scan_flags |= NL80211_SCAN_FLAG_LOW_PRIORITY;
 	}
 
 	if (params->mac_addr_rand) {
-		wpa_printf(MSG_DEBUG,
-			   "nl80211: Add NL80211_SCAN_FLAG_RANDOM_ADDR");
+		wpa_printf(MSG_INFO,
+			   "nl80211: Add NL80211_SCAN_FLAG_RANDOM_ADDR (thesis-out-unusual)");
 		scan_flags |= NL80211_SCAN_FLAG_RANDOM_ADDR;
 
 		if (params->mac_addr) {
-			wpa_printf(MSG_DEBUG, "nl80211: MAC address: " MACSTR,
+			wpa_printf(MSG_INFO, "nl80211: (thesis-out-unusual) MAC address: " MACSTR,
 				   MAC2STR(params->mac_addr));
 			if (nla_put(msg, QCA_WLAN_VENDOR_ATTR_SCAN_MAC,
 				    ETH_ALEN, params->mac_addr))
@@ -1006,7 +1010,7 @@ int wpa_driver_nl80211_vendor_scan(struct i802_bss *bss,
 		}
 
 		if (params->mac_addr_mask) {
-			wpa_printf(MSG_DEBUG, "nl80211: MAC address mask: "
+			wpa_printf(MSG_INFO, "nl80211: (thesis-out-unusual) MAC address mask: "
 				   MACSTR, MAC2STR(params->mac_addr_mask));
 			if (nla_put(msg, QCA_WLAN_VENDOR_ATTR_SCAN_MAC_MASK,
 				    ETH_ALEN, params->mac_addr_mask))
@@ -1021,7 +1025,7 @@ int wpa_driver_nl80211_vendor_scan(struct i802_bss *bss,
 	if (params->p2p_probe) {
 		struct nlattr *rates;
 
-		wpa_printf(MSG_DEBUG, "nl80211: P2P probe - mask SuppRates");
+		wpa_printf(MSG_INFO, "nl80211: P2P probe - mask SuppRates (thesis-out-unusual)");
 
 		rates = nla_nest_start(msg,
 				       QCA_WLAN_VENDOR_ATTR_SCAN_SUPP_RATES);
@@ -1048,8 +1052,8 @@ int wpa_driver_nl80211_vendor_scan(struct i802_bss *bss,
 	ret = send_and_recv_msgs(drv, msg, scan_cookie_handler, &cookie);
 	msg = NULL;
 	if (ret) {
-		wpa_printf(MSG_DEBUG,
-			   "nl80211: Vendor scan trigger failed: ret=%d (%s)",
+		wpa_printf(MSG_INFO,
+			   "nl80211: Vendor scan trigger failed: ret=%d (%s) (thesis-out-unusual)",
 			   ret, strerror(-ret));
 		goto fail;
 	}
@@ -1057,8 +1061,8 @@ int wpa_driver_nl80211_vendor_scan(struct i802_bss *bss,
 	drv->vendor_scan_cookie = cookie;
 	drv->scan_state = SCAN_REQUESTED;
 
-	wpa_printf(MSG_DEBUG,
-		   "nl80211: Vendor scan requested (ret=%d) - scan timeout 30 seconds, scan cookie:0x%llx",
+	wpa_printf(MSG_INFO,
+		   "nl80211: (thesis-out-unusual) Vendor scan requested (ret=%d) - scan timeout 30 seconds, scan cookie:0x%llx",
 		   ret, (long long unsigned int) cookie);
 	eloop_cancel_timeout(wpa_driver_nl80211_scan_timeout, drv, drv->ctx);
 	eloop_register_timeout(30, 0, wpa_driver_nl80211_scan_timeout,
