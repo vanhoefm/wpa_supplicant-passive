@@ -4973,6 +4973,9 @@ const char * driver_flag_to_string(u64 flag);
 extern const struct wpa_driver_ops *const wpa_drivers[];
 
 
+int nl80211_scan_set_passive(int mode);
+
+
 /* Available drivers */
 
 #ifdef CONFIG_DRIVER_WEXT

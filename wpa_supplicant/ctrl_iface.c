@@ -8757,6 +8757,14 @@ char * wpa_supplicant_ctrl_iface_process(struct wpa_supplicant *wpa_s,
 	if (os_strcmp(buf, "PING") == 0) {
 		os_memcpy(reply, "PONG\n", 5);
 		reply_len = 5;
+    } else if (os_strncmp(buf, "THESIS_PASS", 11) == 0) {
+    	wpa_printf(MSG_INFO, "yeah (thesis)");
+        nl80211_scan_set_passive(1);
+            //reply_len = -1;
+    } else if (os_strncmp(buf, "THESIS_ACT", 10) == 0) {
+    	wpa_printf(MSG_INFO, "nah (thesis)");
+        nl80211_scan_set_passive(0);
+            //reply_len = -1;
 	} else if (os_strcmp(buf, "IFNAME") == 0) {
 		reply_len = os_strlen(wpa_s->ifname);
 		os_memcpy(reply, wpa_s->ifname, reply_len);

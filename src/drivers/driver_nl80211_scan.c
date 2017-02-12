@@ -19,6 +19,7 @@
 #include "common/qca-vendor.h"
 #include "driver_nl80211.h"
 
+int scan_mode_passive = 0;
 
 static int get_noise_for_scan_results(struct nl_msg *msg, void *arg)
 {
@@ -114,6 +115,12 @@ void wpa_driver_nl80211_scan_timeout(void *eloop_ctx, void *timeout_ctx)
 }
 
 
+
+int nl80211_scan_set_passive(int mode) {
+    scan_mode_passive = mode;
+    return 1;
+};
+
 static struct nl_msg *
 nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 		    struct wpa_driver_scan_params *params)
@@ -127,8 +134,8 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 	if (!msg)
 		return NULL;
         
-#ifdef ACTIVE_SCAN
-	if (params->num_ssids) {
+//#ifdef ACTIVE_SCAN
+	if (params->num_ssids && !scan_mode_passive) {
 		struct nlattr *ssids;
 
 		ssids = nla_nest_start(msg, NL80211_ATTR_SCAN_SSIDS);
@@ -144,11 +151,11 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 		}
 		nla_nest_end(msg, ssids);
 	} else {
-#endif
+//#endif
 		wpa_printf(MSG_INFO, "nl80211: Passive scan requested (thesis-out)");
-#ifdef ACTIVE_SCAN
+//#ifdef ACTIVE_SCAN
 	}
-#endif
+//#endif
 
 	if (params->extra_ies) {
 		wpa_hexdump(MSG_INFO, "nl80211: Scan extra IEs (thesis-out)",

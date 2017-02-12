@@ -171,7 +171,7 @@ static void wpas_trigger_scan_cb(struct wpa_radio_work *work, int deinit)
 	wpa_supplicant_notify_scanning(wpa_s, 1);
 
 	if (wpa_s->clear_driver_scan_cache) {
-		wpa_printf(MSG_DEBUG,
+		wpa_printf(MSG_INFO,
 			   "Request driver to clear scan cache due to local BSS flush");
 		params->only_new_results = 1;
 	}
