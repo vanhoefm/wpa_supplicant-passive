@@ -174,7 +174,7 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 	}
         
         if(priority_mode && !prior_type){
-            if(channel_toggle_var) {
+            if(!channel_toggle_var) {
                 int *freqs_new = malloc(4* sizeof(int));
                 freqs_new[0] = 2412;
                 freqs_new[1] = 2437;
@@ -183,7 +183,7 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
                 params->freqs = freqs_new;
                 channel_toggle_var = 1;
             } else {
-                int *freqs_new = malloc(11* sizeof(int));
+                int *freqs_new = malloc(34* sizeof(int));
                 freqs_new[0] = 2417;
                 freqs_new[1] = 2422;
                 freqs_new[2] = 2427;
@@ -194,7 +194,31 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
                 freqs_new[7] = 2457;
                 freqs_new[8] = 2467;
                 freqs_new[9] = 2472;
-                freqs_new[10] = 0;
+                freqs_new[10] = 5180;
+                freqs_new[11] = 5200;
+                freqs_new[12] = 5220;
+                freqs_new[13] = 5240;
+                freqs_new[14] = 5260;
+                freqs_new[15] = 5280;
+                freqs_new[16] = 5300;
+                freqs_new[17] = 5320;
+                freqs_new[18] = 5500;
+                freqs_new[19] = 5520;
+                freqs_new[20] = 5540;
+                freqs_new[21] = 5560;
+                freqs_new[22] = 5580;
+                freqs_new[23] = 5600;
+                freqs_new[24] = 5620;
+                freqs_new[25] = 5640;
+                freqs_new[26] = 5660;
+                freqs_new[27] = 5680;
+                freqs_new[28] = 5700;
+                freqs_new[29] = 5745;
+                freqs_new[30] = 5765;
+                freqs_new[31] = 5785;
+                freqs_new[32] = 5805;
+                freqs_new[33] = 5825;
+                freqs_new[34] = 0;
                 params->freqs = freqs_new;
                 channel_toggle_var = 0;
             }
