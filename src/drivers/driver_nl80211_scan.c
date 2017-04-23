@@ -19,7 +19,19 @@
 #include "common/qca-vendor.h"
 #include "driver_nl80211.h"
 
-int scan_mode_passive = 0;
+int scan_mode_passive = 1;
+
+// Give priority to channels 1-6-11. 0 = disabled, 1 = enabled
+int priority_mode = 1;
+
+// 1 DOES NOT FUNCTION AS INTENDED
+// Use one of two modes: alternate between priority and non-priority in
+// subsequent scans, or try to scan and return twice in one main scan call.
+// 0 = alternate outside scan, 1 = alternate in scan
+int prior_type = 0;
+
+//Variable for first priority mode
+int channel_toggle_var = 0;
 
 static int get_noise_for_scan_results(struct nl_msg *msg, void *arg)
 {
@@ -134,7 +146,6 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 	if (!msg)
 		return NULL;
         
-//#ifdef ACTIVE_SCAN
 	if (params->num_ssids && !scan_mode_passive) {
 		struct nlattr *ssids;
 
@@ -151,11 +162,8 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 		}
 		nla_nest_end(msg, ssids);
 	} else {
-//#endif
 		wpa_printf(MSG_INFO, "nl80211: Passive scan requested (thesis-out)");
-//#ifdef ACTIVE_SCAN
 	}
-//#endif
 
 	if (params->extra_ies) {
 		wpa_hexdump(MSG_INFO, "nl80211: Scan extra IEs (thesis-out)",
@@ -164,7 +172,34 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 			    params->extra_ies))
 			goto fail;
 	}
-
+        
+        if(priority_mode && !prior_type){
+            if(channel_toggle_var) {
+                int *freqs_new = malloc(4* sizeof(int));
+                freqs_new[0] = 2412;
+                freqs_new[1] = 2437;
+                freqs_new[2] = 2462;
+                freqs_new[3] = 0;
+                params->freqs = freqs_new;
+                channel_toggle_var = 1;
+            } else {
+                int *freqs_new = malloc(11* sizeof(int));
+                freqs_new[0] = 2417;
+                freqs_new[1] = 2422;
+                freqs_new[2] = 2427;
+                freqs_new[3] = 2432;
+                freqs_new[4] = 2442;
+                freqs_new[5] = 2447;
+                freqs_new[6] = 2452;
+                freqs_new[7] = 2457;
+                freqs_new[8] = 2467;
+                freqs_new[9] = 2472;
+                freqs_new[10] = 0;
+                params->freqs = freqs_new;
+                channel_toggle_var = 0;
+            }
+        }
+        
 	if (params->freqs) {
 		struct nlattr *freqs;
 		freqs = nla_nest_start(msg, NL80211_ATTR_SCAN_FREQUENCIES);
@@ -224,8 +259,46 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 	return msg;
 
 fail:
+        wpa_printf(MSG_INFO, "nl80211: (thesis-out) FAILED ");
 	nlmsg_free(msg);
 	return NULL;
+}
+
+static struct nl_msg *
+nl80211_scan_common_prior_channels(struct i802_bss *bss, u8 cmd,
+		    struct wpa_driver_scan_params *params)
+{
+    int *freqs_new = malloc(4* sizeof(int));
+    freqs_new[0] = 2412;
+    freqs_new[1] = 2437;
+    freqs_new[2] = 2462;
+    freqs_new[3] = 0;
+    params->freqs = freqs_new;
+    struct nl_msg * result = nl80211_scan_common(bss, cmd, params);
+    free(freqs_new);
+    return result;
+}
+
+static struct nl_msg *
+nl80211_scan_common_nonprior_channels(struct i802_bss *bss, u8 cmd,
+		    struct wpa_driver_scan_params *params)
+{
+    int *freqs_new = malloc(11* sizeof(int));
+    freqs_new[0] = 2417;
+    freqs_new[1] = 2422;
+    freqs_new[2] = 2427;
+    freqs_new[3] = 2432;
+    freqs_new[4] = 2442;
+    freqs_new[5] = 2447;
+    freqs_new[6] = 2452;
+    freqs_new[7] = 2457;
+    freqs_new[8] = 2467;
+    freqs_new[9] = 2472;
+    freqs_new[10] = 0;
+    params->freqs = freqs_new;
+    struct nl_msg * result = nl80211_scan_common(bss, cmd, params);
+    free(freqs_new);
+    return result;
 }
 
 
@@ -241,6 +314,7 @@ int wpa_driver_nl80211_scan(struct i802_bss *bss,
 	struct wpa_driver_nl80211_data *drv = bss->drv;
 	int ret = -1, timeout;
 	struct nl_msg *msg = NULL;
+        struct nl_msg *msg2 = NULL;
 
 	wpa_dbg(drv->ctx, MSG_INFO, "nl80211: scan request (thesis-out)");
 	drv->scan_for_auth = 0;
@@ -248,7 +322,14 @@ int wpa_driver_nl80211_scan(struct i802_bss *bss,
 	if (TEST_FAIL())
 		return -1;
 
-	msg = nl80211_scan_common(bss, NL80211_CMD_TRIGGER_SCAN, params);
+        if(!(priority_mode && prior_type)) {
+            msg = nl80211_scan_common(bss, NL80211_CMD_TRIGGER_SCAN, params);
+        } else {
+            msg = nl80211_scan_common_prior_channels(bss, NL80211_CMD_TRIGGER_SCAN, params);
+            msg2 = nl80211_scan_common_nonprior_channels(bss, NL80211_CMD_TRIGGER_SCAN, params);
+            if (!msg2)
+		return -1;
+        }
 	if (!msg)
 		return -1;
 
@@ -282,9 +363,14 @@ int wpa_driver_nl80211_scan(struct i802_bss *bss,
 		if (nla_put(msg, NL80211_ATTR_MAC, ETH_ALEN, params->bssid))
 			goto fail;
 	}
-
+        wpa_printf(MSG_INFO, "nl80211: (thesis-out) Sending first message.");
 	ret = send_and_recv_msgs(drv, msg, NULL, NULL);
+        if(priority_mode && prior_type) {
+            wpa_printf(MSG_INFO, "nl80211: (thesis-out) Sending second message.");
+            ret = ret + send_and_recv_msgs(drv, msg2, NULL, NULL);
+        }
 	msg = NULL;
+        msg2 = NULL;
 	if (ret) {
 		wpa_printf(MSG_INFO, "nl80211: Scan trigger failed: ret=%d "
 			   "(%s) (thesis-out)", ret, strerror(-ret));
