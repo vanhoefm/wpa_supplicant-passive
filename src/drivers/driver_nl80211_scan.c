@@ -133,6 +133,11 @@ int nl80211_scan_set_passive(int mode) {
     return 1;
 };
 
+int nl80211_scan_set_prior(int mode) {
+    priority_mode = mode;
+    return 1;
+};
+
 static struct nl_msg *
 nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 		    struct wpa_driver_scan_params *params)
@@ -173,56 +178,56 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 			goto fail;
 	}
         
-        if(priority_mode && !prior_type){
-            if(!channel_toggle_var) {
-                int *freqs_new = malloc(4* sizeof(int));
-                freqs_new[0] = 2412;
-                freqs_new[1] = 2437;
-                freqs_new[2] = 2462;
-                freqs_new[3] = 0;
-                params->freqs = freqs_new;
-                channel_toggle_var = 1;
-            } else {
-                int *freqs_new = malloc(34* sizeof(int));
-                freqs_new[0] = 2417;
-                freqs_new[1] = 2422;
-                freqs_new[2] = 2427;
-                freqs_new[3] = 2432;
-                freqs_new[4] = 2442;
-                freqs_new[5] = 2447;
-                freqs_new[6] = 2452;
-                freqs_new[7] = 2457;
-                freqs_new[8] = 2467;
-                freqs_new[9] = 2472;
-                freqs_new[10] = 5180;
-                freqs_new[11] = 5200;
-                freqs_new[12] = 5220;
-                freqs_new[13] = 5240;
-                freqs_new[14] = 5260;
-                freqs_new[15] = 5280;
-                freqs_new[16] = 5300;
-                freqs_new[17] = 5320;
-                freqs_new[18] = 5500;
-                freqs_new[19] = 5520;
-                freqs_new[20] = 5540;
-                freqs_new[21] = 5560;
-                freqs_new[22] = 5580;
-                freqs_new[23] = 5600;
-                freqs_new[24] = 5620;
-                freqs_new[25] = 5640;
-                freqs_new[26] = 5660;
-                freqs_new[27] = 5680;
-                freqs_new[28] = 5700;
-                freqs_new[29] = 5745;
-                freqs_new[30] = 5765;
-                freqs_new[31] = 5785;
-                freqs_new[32] = 5805;
-                freqs_new[33] = 5825;
-                freqs_new[34] = 0;
-                params->freqs = freqs_new;
-                channel_toggle_var = 0;
-            }
+    if(scan_mode_passive && priority_mode && !prior_type){
+        if(!channel_toggle_var) {
+            int *freqs_new = malloc(5* sizeof(int));
+            freqs_new[0] = 2412;
+            freqs_new[1] = 2437;
+            freqs_new[2] = 2462;
+            freqs_new[3] = 5180;
+            freqs_new[4] = 0;
+            params->freqs = freqs_new;
+            channel_toggle_var = 1;
+        } else {
+            int *freqs_new = malloc(34* sizeof(int));
+            freqs_new[0] = 2417;
+            freqs_new[1] = 2422;
+            freqs_new[2] = 2427;
+            freqs_new[3] = 2432;
+            freqs_new[4] = 2442;
+            freqs_new[5] = 2447;
+            freqs_new[6] = 2452;
+            freqs_new[7] = 2457;
+            freqs_new[8] = 2467;
+            freqs_new[9] = 2472;
+            freqs_new[10] = 5200;
+            freqs_new[11] = 5220;
+            freqs_new[12] = 5240;
+            freqs_new[13] = 5260;
+            freqs_new[14] = 5280;
+            freqs_new[15] = 5300;
+            freqs_new[16] = 5320;
+            freqs_new[17] = 5500;
+            freqs_new[18] = 5520;
+            freqs_new[19] = 5540;
+            freqs_new[20] = 5560;
+            freqs_new[21] = 5580;
+            freqs_new[22] = 5600;
+            freqs_new[23] = 5620;
+            freqs_new[24] = 5640;
+            freqs_new[25] = 5660;
+            freqs_new[26] = 5680;
+            freqs_new[27] = 5700;
+            freqs_new[28] = 5745;
+            freqs_new[29] = 5765;
+            freqs_new[30] = 5785;
+            freqs_new[31] = 5805;
+            freqs_new[32] = 5825;
+            freqs_new[33] = 0;
+            params->freqs = freqs_new;
+            channel_toggle_var = 0;
         }
+    }
         
 	if (params->freqs) {
 		struct nlattr *freqs;
@@ -387,12 +392,12 @@ int wpa_driver_nl80211_scan(struct i802_bss *bss,
 		if (nla_put(msg, NL80211_ATTR_MAC, ETH_ALEN, params->bssid))
 			goto fail;
 	}
-        wpa_printf(MSG_INFO, "nl80211: (thesis-out) Sending first message.");
+    //wpa_printf(MSG_INFO, "nl80211: (thesis-out) Sending first message.");
 	ret = send_and_recv_msgs(drv, msg, NULL, NULL);
-        if(priority_mode && prior_type) {
-            wpa_printf(MSG_INFO, "nl80211: (thesis-out) Sending second message.");
-            ret = ret + send_and_recv_msgs(drv, msg2, NULL, NULL);
-        }
+    if(priority_mode && prior_type) {
+        //wpa_printf(MSG_INFO, "nl80211: (thesis-out) Sending second message.");
+        ret = ret + send_and_recv_msgs(drv, msg2, NULL, NULL);
+    }
 	msg = NULL;
         msg2 = NULL;
 	if (ret) {

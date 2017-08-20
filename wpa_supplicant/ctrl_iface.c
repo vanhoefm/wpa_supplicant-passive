@@ -8765,6 +8765,14 @@ char * wpa_supplicant_ctrl_iface_process(struct wpa_supplicant *wpa_s,
     	wpa_printf(MSG_INFO, "nah (thesis)");
         nl80211_scan_set_passive(0);
             //reply_len = -1;
+    } else if (os_strncmp(buf, "THESIS_PRIOR", 12) == 0) {
+    	wpa_printf(MSG_INFO, "yeah, prior (thesis)");
+        nl80211_scan_set_prior(1);
+            //reply_len = -1;
+    } else if (os_strncmp(buf, "THESIS_NONPRIOR", 15) == 0) {
+    	wpa_printf(MSG_INFO, "nah, nonprior (thesis)");
+        nl80211_scan_set_prior(0);
+            //reply_len = -1;
 	} else if (os_strcmp(buf, "IFNAME") == 0) {
 		reply_len = os_strlen(wpa_s->ifname);
 		os_memcpy(reply, wpa_s->ifname, reply_len);
