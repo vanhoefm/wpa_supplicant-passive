@@ -178,7 +178,7 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 			goto fail;
 	}
         
-    if(scan_mode_passive && priority_mode && !prior_type){
+    if(priority_mode && !prior_type){
         if(!channel_toggle_var) {
             int *freqs_new = malloc(5* sizeof(int));
             freqs_new[0] = 2412;
