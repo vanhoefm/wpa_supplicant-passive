@@ -47,6 +47,8 @@
 #include "mesh_mpm.h"
 #include "wmm_ac.h"
 
+/** This is a quicky and dirty hack */
+extern int channel_toggle_var;
 
 #ifndef CONFIG_NO_SCAN_PROCESSING
 static int wpas_select_network_from_last_scan(struct wpa_supplicant *wpa_s,
@@ -1538,6 +1540,11 @@ static int _wpa_supplicant_event_scan_results(struct wpa_supplicant *wpa_s,
 		wpa_supplicant_req_new_scan(wpa_s, 1, 0);
 		ret = -1;
 		goto scan_work_done;
+	}
+
+	if (channel_toggle_var) {
+		wpa_printf(MSG_INFO, "Requesting scan for remaining channels (thesis-out)");
+		wpa_supplicant_req_scan(wpa_s, 0, 0);
 	}
 
 #ifndef CONFIG_NO_RANDOM_POOL
