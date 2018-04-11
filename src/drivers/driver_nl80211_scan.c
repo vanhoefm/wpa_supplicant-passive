@@ -29,15 +29,11 @@ static int priority_mode = 1;
 int channel_toggle_var = 0;
 
 // The list of channels the scan in priority and non-priority scans
-static int freqs_priority[] = {2412, 2437, 2462, 5180, 0};
-static int freqs_remaining[] = {
-	/** Taken from iw list on a Nexus 5X */
-	2417, 2422, 2427, 2432, 2442, 2447, 2452, 2457, 2467, 2472, 2484,
-	5200, 5220, 5240, 5260, 5280, 5300, 5320, 5500, 5520, 5540,
-	5560, 5580, 5600, 5620, 5640, 5660, 5680, 5700, 5720, 5745,
-	5765, 5785, 5805, 5825, 5852, 5855, 5860, 5865, 5870, 5875,
-	5880, 5885, 5890, 5895, 5900, 5905, 5910, 5915, 5920, 0
-};
+int freqs_priority_requested[] = {2412, 2437, 2462, 5180, 0};
+int *freqs_priority = NULL;
+int num_freqs_priority = 0;
+int *freqs_remaining = NULL;
+int num_freqs_remaining = 0;
 
 static int get_noise_for_scan_results(struct nl_msg *msg, void *arg)
 {
@@ -186,12 +182,12 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
         
 	if(priority_mode) {
 		if (channel_toggle_var) {
-			params->freqs = os_malloc(sizeof(freqs_remaining));
-			memcpy(params->freqs, freqs_remaining, sizeof(freqs_remaining));
+			params->freqs = os_malloc(sizeof(int) * (num_freqs_remaining + 1));
+			memcpy(params->freqs, freqs_remaining, sizeof(int) * (num_freqs_remaining + 1));
 		}
 		else {
-			params->freqs = os_malloc(sizeof(freqs_priority));
-			memcpy(params->freqs, freqs_priority, sizeof(freqs_priority));
+			params->freqs = os_malloc(sizeof(int) * (num_freqs_priority + 1));
+			memcpy(params->freqs, freqs_priority, sizeof(int) * (num_freqs_priority + 1));
 		}
 		channel_toggle_var = !channel_toggle_var;
 	}
