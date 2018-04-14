@@ -23,6 +23,8 @@ extern int *freqs_priority;
 extern int num_freqs_priority;
 extern int *freqs_remaining;
 extern int num_freqs_remaining;
+extern int *all_channels;
+extern int num_all_channels;
 
 static int protocol_feature_handler(struct nl_msg *msg, void *arg)
 {
@@ -1780,13 +1782,13 @@ nl80211_get_hw_feature_data(void *priv, u16 *num_modes, u16 *flags)
 		}
 #if 1
 		// 1. Put all channels into an array
-		int num_total_channels = 0;
+		num_all_channels = 0;
 		for (int i = 0; i < *result.num_modes; ++i) {
 			struct hostapd_hw_modes *mode = &result.modes[i];
-			num_total_channels += mode->num_channels;
+			num_all_channels += mode->num_channels;
 		}
 
-		int *all_channels = os_zalloc(num_total_channels * sizeof(int));
+		all_channels = os_zalloc(num_all_channels * sizeof(int));
 		int allidx = 0;
 
 		for (int i = 0; i < *result.num_modes; ++i)
@@ -1802,28 +1804,26 @@ nl80211_get_hw_feature_data(void *priv, u16 *num_modes, u16 *flags)
 		}
 
 		// 2. freqs_priority = priority & all_channels
-		freqs_priority = os_zalloc((num_total_channels + 1) * sizeof(int));
+		freqs_priority = os_zalloc((num_all_channels + 1) * sizeof(int));
 		num_freqs_priority = 0;
 		for (int i = 0; freqs_priority_requested[i] != 0; ++i)
 		{
-			if (array_contains_int(all_channels, num_total_channels, freqs_priority_requested[i])) {
+			if (array_contains_int(all_channels, num_all_channels, freqs_priority_requested[i])) {
 				wpa_printf(MSG_INFO, "Priority Frequency: %d", freqs_priority_requested[i]);
 				freqs_priority[num_freqs_priority++] = freqs_priority_requested[i];
 			}
 		}
 
 		// 3. freqs_remaining = all_channels - priority
-		freqs_remaining = os_zalloc((num_total_channels + 1) * sizeof(int));
+		freqs_remaining = os_zalloc((num_all_channels + 1) * sizeof(int));
 		num_freqs_remaining = 0;
-		for (int i = 0; i < num_total_channels; ++i)
+		for (int i = 0; i < num_all_channels; ++i)
 		{
 			if (!array_contains_int(freqs_priority, num_freqs_priority, all_channels[i])) {
 				wpa_printf(MSG_INFO, "Remaining Frequency: %d", all_channels[i]);
 				freqs_remaining[num_freqs_remaining++] = all_channels[i];
 			}
 		}
-
-		os_free(all_channels);
 #endif
 		return wpa_driver_nl80211_postprocess_modes(result.modes,
 							    num_modes);

@@ -48,7 +48,8 @@
 #include "wmm_ac.h"
 
 /** This is a quicky and dirty hack */
-extern int channel_toggle_var;
+extern int staticprior_remaining;
+extern int incremental_nextchan;
 
 #ifndef CONFIG_NO_SCAN_PROCESSING
 static int wpas_select_network_from_last_scan(struct wpa_supplicant *wpa_s,
@@ -1542,8 +1543,11 @@ static int _wpa_supplicant_event_scan_results(struct wpa_supplicant *wpa_s,
 		goto scan_work_done;
 	}
 
-	if (channel_toggle_var) {
-		wpa_printf(MSG_INFO, "Requesting scan for remaining channels (thesis-out)");
+	if (staticprior_remaining) {
+		wpa_printf(MSG_INFO, "Static Priority Scan: Requesting scan for remaining channels (thesis-out)");
+		wpa_supplicant_req_scan(wpa_s, 0, 0);
+	} else if (incremental_nextchan) {
+		wpa_printf(MSG_INFO, "Incremental Scan: Requesting scan for next channel index %d (thesis-out)", incremental_nextchan);
 		wpa_supplicant_req_scan(wpa_s, 0, 0);
 	}
 

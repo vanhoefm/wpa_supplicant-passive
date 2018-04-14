@@ -23,10 +23,17 @@
 static int scan_mode_passive = 1;
 
 // Give priority to channels 1-6-11. 0 = disabled, 1 = enabled
-static int priority_mode = 1;
+enum ScanStrategy {
+	Scan_Normal = 0,
+	Scan_Incremental = 1,
+	Scan_StaticPriority = 2,
+	Scan_DynamicPriority = 3
+};
+static int scan_strategy = Scan_StaticPriority;
 
 // To switch between priority channels (first scan) and remaining channels (second scan)
-int channel_toggle_var = 0;
+int staticprior_remaining = 0;
+int incremental_nextchan = 0;
 
 // The list of channels the scan in priority and non-priority scans
 int freqs_priority_requested[] = {2412, 2437, 2462, 5180, 0};
@@ -34,6 +41,9 @@ int *freqs_priority = NULL;
 int num_freqs_priority = 0;
 int *freqs_remaining = NULL;
 int num_freqs_remaining = 0;
+// All available channels - for incremental scanning strategy
+int *all_channels = NULL;
+int num_all_channels = 0;
 
 static int get_noise_for_scan_results(struct nl_msg *msg, void *arg)
 {
@@ -136,7 +146,9 @@ int nl80211_scan_set_passive(int mode) {
 };
 
 int nl80211_scan_set_prior(int mode) {
-	priority_mode = mode;
+	/** FIXME: Use ListPreference to properly select all scanning strategies */
+	scan_strategy = (scan_strategy + 1) % 4;
+	wpa_printf(MSG_INFO, "Configured scan strategy %d (thesis-out)", scan_strategy);
 	return 1;
 };
 
@@ -180,16 +192,47 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 			goto fail;
 	}
         
-	if(priority_mode) {
-		if (channel_toggle_var) {
-			params->freqs = os_malloc(sizeof(int) * (num_freqs_remaining + 1));
+	wpa_printf(MSG_INFO, "Using scan strategy %d (thesis-out)", scan_strategy);
+	switch (scan_strategy)
+	{
+	case Scan_Normal:
+		// Nothing to do
+		wpa_printf(MSG_INFO, "Using normal scan strategy (thesis-out)");
+		break;
+
+	case Scan_Incremental:
+		wpa_printf(MSG_INFO, "Using incremental scan strategy (thesis-out)");
+
+		params->freqs = os_zalloc(sizeof(int) * 2);
+		params->freqs[0] = all_channels[incremental_nextchan];
+
+		// Prepare to scan next channel, or stop if we scanned them all
+		incremental_nextchan++;
+		if (incremental_nextchan >= num_all_channels)
+			incremental_nextchan = 0;
+
+		break;
+
+	case Scan_StaticPriority:
+		wpa_printf(MSG_INFO, "Using static priority scan strategy (thesis-out)");
+
+		/** Is is the the second remaining channels scan, or the first priority scan? */
+		if (staticprior_remaining) {
+			params->freqs = os_zalloc(sizeof(int) * (num_freqs_remaining + 1));
 			memcpy(params->freqs, freqs_remaining, sizeof(int) * (num_freqs_remaining + 1));
 		}
 		else {
-			params->freqs = os_malloc(sizeof(int) * (num_freqs_priority + 1));
+			params->freqs = os_zalloc(sizeof(int) * (num_freqs_priority + 1));
 			memcpy(params->freqs, freqs_priority, sizeof(int) * (num_freqs_priority + 1));
 		}
-		channel_toggle_var = !channel_toggle_var;
+		staticprior_remaining = !staticprior_remaining;
+
+		break;
+
+	case Scan_DynamicPriority:
+		// TODO
+		wpa_printf(MSG_INFO, "Using dynamic priority scan strategy (thesis-out)");
+		break;
 	}
    
 	if (params->freqs) {
