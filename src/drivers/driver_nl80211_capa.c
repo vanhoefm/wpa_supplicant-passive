@@ -1797,11 +1797,29 @@ nl80211_get_hw_feature_data(void *priv, u16 *num_modes, u16 *flags)
 			wpa_printf(MSG_INFO, "Mode %d", i);
 			for (int chanidx = 0; chanidx < mode->num_channels; ++chanidx)
 			{
-				wpa_printf(MSG_INFO, "Frequency: %d", mode->channels[chanidx].freq);
-				all_channels[allidx] = mode->channels[chanidx].freq;
-				allidx++;
+				// Exclude disabled channels (e.g. DSRC channels)
+				if (mode->channels[chanidx].flag & HOSTAPD_CHAN_DISABLED)
+				{
+					wpa_printf(MSG_INFO, "Frequency: %d flags 0x%08X (ignored because channel is disabled)",
+						mode->channels[chanidx].freq, mode->channels[chanidx].flag);
+				}
+				// For some reason DSRC channels are not always explicitly marked as disabled...
+				else if (5852 <= mode->channels[chanidx].freq && mode->channels[chanidx].freq <= 5920)
+				{
+					wpa_printf(MSG_INFO, "Frequency: %d flags 0x%08X (ignored because DSRC channel)",
+						mode->channels[chanidx].freq, mode->channels[chanidx].flag);
+				}
+				else
+				{
+					wpa_printf(MSG_INFO, "Frequency: %d flags 0x%08X", mode->channels[chanidx].freq, mode->channels[chanidx].flag);
+					all_channels[allidx] = mode->channels[chanidx].freq;
+					allidx++;
+				}
 			}
 		}
+
+		// Update channel count after removing disabled channels
+		num_all_channels = allidx;
 
 		// 2. freqs_priority = priority & all_channels
 		freqs_priority = os_zalloc((num_all_channels + 1) * sizeof(int));
