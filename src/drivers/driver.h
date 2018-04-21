@@ -4974,7 +4974,7 @@ extern const struct wpa_driver_ops *const wpa_drivers[];
 
 
 int nl80211_scan_set_passive(int mode);
-int nl80211_scan_set_prior(int mode);
+int nl80211_scan_set_strategy(int strategy);
 
 
 

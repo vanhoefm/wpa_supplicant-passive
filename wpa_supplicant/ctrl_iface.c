@@ -946,6 +946,15 @@ static int wpa_supplicant_ctrl_iface_ft_ds(
 #endif /* CONFIG_IEEE80211R */
 
 
+static int wpas_ctrl_set_scan_strategy(struct wpa_supplicant *wpa_s,
+					     char *cmd)
+{
+	int strategy = atoi(cmd);
+	nl80211_scan_set_strategy(strategy);
+	return 0;
+}
+
+
 #ifdef CONFIG_WPS
 static int wpa_supplicant_ctrl_iface_wps_pbc(struct wpa_supplicant *wpa_s,
 					     char *cmd)
@@ -8757,22 +8766,16 @@ char * wpa_supplicant_ctrl_iface_process(struct wpa_supplicant *wpa_s,
 	if (os_strcmp(buf, "PING") == 0) {
 		os_memcpy(reply, "PONG\n", 5);
 		reply_len = 5;
-    } else if (os_strncmp(buf, "THESIS_PASS", 11) == 0) {
-    	wpa_printf(MSG_INFO, "yeah (thesis)");
-        nl80211_scan_set_passive(1);
-            //reply_len = -1;
-    } else if (os_strncmp(buf, "THESIS_ACT", 10) == 0) {
-    	wpa_printf(MSG_INFO, "nah (thesis)");
-        nl80211_scan_set_passive(0);
-            //reply_len = -1;
-    } else if (os_strncmp(buf, "THESIS_PRIOR", 12) == 0) {
-    	wpa_printf(MSG_INFO, "yeah, prior (thesis)");
-        nl80211_scan_set_prior(1);
-            //reply_len = -1;
-    } else if (os_strncmp(buf, "THESIS_NONPRIOR", 15) == 0) {
-    	wpa_printf(MSG_INFO, "nah, nonprior (thesis)");
-        nl80211_scan_set_prior(0);
-            //reply_len = -1;
+	} else if (os_strncmp(buf, "THESIS_PASS", 11) == 0) {
+		wpa_printf(MSG_INFO, "yeah (thesis)");
+		nl80211_scan_set_passive(1);
+	} else if (os_strncmp(buf, "THESIS_ACT", 10) == 0) {
+		wpa_printf(MSG_INFO, "nah (thesis)");
+		nl80211_scan_set_passive(0);
+	} else if (os_strncmp(buf, "SCAN_STRATEGY ", 14) == 0) {
+		if (wpas_ctrl_set_scan_strategy(wpa_s, buf + 14))
+			reply_len = -1;
+		wpa_printf(MSG_INFO, "yeah, prior (thesis)");
 	} else if (os_strcmp(buf, "IFNAME") == 0) {
 		reply_len = os_strlen(wpa_s->ifname);
 		os_memcpy(reply, wpa_s->ifname, reply_len);

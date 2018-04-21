@@ -140,14 +140,16 @@ void wpa_driver_nl80211_scan_timeout(void *eloop_ctx, void *timeout_ctx)
 
 
 
-int nl80211_scan_set_passive(int mode) {
+int nl80211_scan_set_passive(int mode)
+{
 	scan_mode_passive = mode;
+	wpa_printf(MSG_INFO, "Set passive scanning mode to %d (thesis-out)", scan_mode_passive);
 	return 1;
 };
 
-int nl80211_scan_set_prior(int mode) {
-	/** FIXME: Use ListPreference to properly select all scanning strategies */
-	scan_strategy = (scan_strategy + 1) % 4;
+int nl80211_scan_set_strategy(int strategy)
+{
+	scan_strategy = strategy;
 	wpa_printf(MSG_INFO, "Configured scan strategy %d (thesis-out)", scan_strategy);
 	return 1;
 };

@@ -303,6 +303,4 @@ int wpa_driver_nl80211_abort_scan(void *priv);
 int wpa_driver_nl80211_vendor_scan(struct i802_bss *bss,
 				   struct wpa_driver_scan_params *params);
 int nl80211_set_default_scan_ies(void *priv, const u8 *ies, size_t ies_len);
-int nl80211_scan_set_passive(int mode);
-int nl80211_scan_set_prior(int mode);
 #endif /* DRIVER_NL80211_H */
