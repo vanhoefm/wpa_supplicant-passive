@@ -1261,7 +1261,7 @@ static void wpa_supplicant_req_new_scan(struct wpa_supplicant *wpa_s,
 		 * to INACTIVE state.
 		 */
 		wpa_dbg(wpa_s, MSG_DEBUG, "Short-circuit new scan request "
-			"since there are no enabled networks");
+			"since there are no enabled networks (thesis-out - we don't rely on this)");
 		wpa_supplicant_set_state(wpa_s, WPA_INACTIVE);
 		return;
 	}
@@ -1498,6 +1498,25 @@ static int wpa_supplicant_need_to_roam(struct wpa_supplicant *wpa_s,
 }
 
 
+static void request_next_scan(struct wpa_supplicant *wpa_s)
+{
+	if (os_strstr(wpa_s->ifname, "p2p"))
+		return;
+
+	// This assures the scan is performed even if there are no saved networks,
+	// or other special conditios.
+	wpa_s->scan_req = MANUAL_SCAN_REQ;
+
+	if (staticprior_remaining) {
+		wpa_printf(MSG_INFO, "Static Priority Scan: Requesting scan for remaining channels (thesis-out)");
+		wpa_supplicant_req_scan(wpa_s, 0, 0);
+	} else if (incremental_nextchan) {
+		wpa_printf(MSG_INFO, "Incremental Scan: Requesting scan for next channel index %d (thesis-out)", incremental_nextchan);
+		wpa_supplicant_req_scan(wpa_s, 0, 0);
+	}
+}
+
+
 /*
  * Return a negative value if no scan results could be fetched or if scan
  * results should not be shared with other virtual interfaces.
@@ -1541,14 +1560,6 @@ static int _wpa_supplicant_event_scan_results(struct wpa_supplicant *wpa_s,
 		wpa_supplicant_req_new_scan(wpa_s, 1, 0);
 		ret = -1;
 		goto scan_work_done;
-	}
-
-	if (staticprior_remaining) {
-		wpa_printf(MSG_INFO, "Static Priority Scan: Requesting scan for remaining channels (thesis-out)");
-		wpa_supplicant_req_scan(wpa_s, 0, 0);
-	} else if (incremental_nextchan) {
-		wpa_printf(MSG_INFO, "Incremental Scan: Requesting scan for next channel index %d (thesis-out)", incremental_nextchan);
-		wpa_supplicant_req_scan(wpa_s, 0, 0);
 	}
 
 #ifndef CONFIG_NO_RANDOM_POOL
@@ -1612,6 +1623,7 @@ static int _wpa_supplicant_event_scan_results(struct wpa_supplicant *wpa_s,
 	if (data && data->scan_info.external_scan) {
 		wpa_dbg(wpa_s, MSG_DEBUG, "Do not use results from externally requested scan operation for network selection");
 		wpa_scan_results_free(scan_res);
+		request_next_scan(wpa_s);
 		return 0;
 	}
 
@@ -1650,6 +1662,7 @@ static int _wpa_supplicant_event_scan_results(struct wpa_supplicant *wpa_s,
 		radio_work_done(work);
 	}
 
+	request_next_scan(wpa_s);
 	return wpas_select_network_from_last_scan(wpa_s, 1, own_request);
 
 scan_work_done:
@@ -1659,6 +1672,7 @@ scan_work_done:
 		wpa_s->scan_work = NULL;
 		radio_work_done(work);
 	}
+	request_next_scan(wpa_s);
 	return ret;
 }
 
