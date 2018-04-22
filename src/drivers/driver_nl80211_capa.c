@@ -19,8 +19,10 @@
 #include "driver_nl80211.h"
 
 extern int freqs_priority_requested[];
-extern int *freqs_priority;
-extern int num_freqs_priority;
+extern int *freqs_priority2;
+extern int num_freqs_priority2;
+extern int *freqs_priority5;
+extern int num_freqs_priority5;
 extern int *freqs_remaining;
 extern int num_freqs_remaining;
 extern int *all_channels;
@@ -1729,7 +1731,7 @@ static int nl80211_set_regulatory_flags(struct wpa_driver_nl80211_data *drv,
 }
 
 
-static int array_contains_int(int *array, int size, int value)
+int array_contains_int(int *array, int size, int value)
 {
 	for (int i = 0; i < size; ++i)
 	{
@@ -1822,24 +1824,19 @@ nl80211_get_hw_feature_data(void *priv, u16 *num_modes, u16 *flags)
 		num_all_channels = allidx;
 
 		// 2. freqs_priority = priority & all_channels
-		freqs_priority = os_zalloc((num_all_channels + 1) * sizeof(int));
-		num_freqs_priority = 0;
+		freqs_priority2 = os_zalloc((num_all_channels + 1) * sizeof(int));
+		freqs_priority5 = os_zalloc((num_all_channels + 1) * sizeof(int));
+		num_freqs_priority2 = 0;
+		num_freqs_priority5 = 0;
 		for (int i = 0; freqs_priority_requested[i] != 0; ++i)
 		{
-			if (array_contains_int(all_channels, num_all_channels, freqs_priority_requested[i])) {
+			if (array_contains_int(all_channels, num_all_channels, freqs_priority_requested[i]))
+			{
 				wpa_printf(MSG_INFO, "Priority Frequency: %d", freqs_priority_requested[i]);
-				freqs_priority[num_freqs_priority++] = freqs_priority_requested[i];
-			}
-		}
-
-		// 3. freqs_remaining = all_channels - priority
-		freqs_remaining = os_zalloc((num_all_channels + 1) * sizeof(int));
-		num_freqs_remaining = 0;
-		for (int i = 0; i < num_all_channels; ++i)
-		{
-			if (!array_contains_int(freqs_priority, num_freqs_priority, all_channels[i])) {
-				wpa_printf(MSG_INFO, "Remaining Frequency: %d", all_channels[i]);
-				freqs_remaining[num_freqs_remaining++] = all_channels[i];
+				if (freqs_priority_requested[i] < 5000)
+					freqs_priority2[num_freqs_priority2++] = freqs_priority_requested[i];
+				else
+					freqs_priority5[num_freqs_priority5++] = freqs_priority_requested[i];
 			}
 		}
 #endif

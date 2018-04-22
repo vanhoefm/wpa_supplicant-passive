@@ -26,10 +26,11 @@ static int scan_mode_passive = 1;
 enum ScanStrategy {
 	Scan_Normal = 0,
 	Scan_Incremental = 1,
-	Scan_StaticPriority = 2,
-	Scan_DynamicPriority = 3
+	Scan_StaticPriority2GHz = 2,
+	Scan_StaticPriority25GHz = 3,
+	Scan_DynamicPriority = 4
 };
-static int scan_strategy = Scan_StaticPriority;
+static int scan_strategy = Scan_StaticPriority25GHz;
 
 // To switch between priority channels (first scan) and remaining channels (second scan)
 int staticprior_remaining = 0;
@@ -37,10 +38,10 @@ int incremental_nextchan = 0;
 
 // The list of channels the scan in priority and non-priority scans
 int freqs_priority_requested[] = {2412, 2437, 2462, 5180, 0};
-int *freqs_priority = NULL;
-int num_freqs_priority = 0;
-int *freqs_remaining = NULL;
-int num_freqs_remaining = 0;
+int *freqs_priority2 = NULL;
+int num_freqs_priority2 = 0;
+int *freqs_priority5 = NULL;
+int num_freqs_priority5 = 0;
 // All available channels - for incremental scanning strategy
 int *all_channels = NULL;
 int num_all_channels = 0;
@@ -154,6 +155,24 @@ int nl80211_scan_set_strategy(int strategy)
 	return 1;
 };
 
+int array_contains_int(int *array, int size, int value);
+int int_set_difference(int *set1, int numset1, int *diffset, int numdiff)
+{
+	int i = 0;
+
+	while (i < numset1)
+	{
+		if (array_contains_int(diffset, numdiff, set1[i])) {
+			memmove(&set1[i], &set1[i+1], sizeof(int) * (numset1 - i - 1));
+			numset1--;
+		} else {
+			i++;
+		}
+	}
+
+	return numset1;
+}
+
 static struct nl_msg *
 nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 		    struct wpa_driver_scan_params *params)
@@ -215,25 +234,59 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 
 		break;
 
-	case Scan_StaticPriority:
-		wpa_printf(MSG_INFO, "Using static priority scan strategy (thesis-out)");
+	case Scan_StaticPriority2GHz:
+		wpa_printf(MSG_INFO, "Using static priority 2.4 GHz scan strategy (thesis-out)");
 
 		/** Is is the the second remaining channels scan, or the first priority scan? */
 		if (staticprior_remaining) {
-			params->freqs = os_zalloc(sizeof(int) * (num_freqs_remaining + 1));
-			memcpy(params->freqs, freqs_remaining, sizeof(int) * (num_freqs_remaining + 1));
+			params->freqs = os_zalloc(sizeof(int) * (num_all_channels + 1));
+			memcpy(params->freqs, all_channels, sizeof(int) * num_all_channels);
+			int num_remaining = int_set_difference(params->freqs, num_all_channels, freqs_priority2, num_freqs_priority2);
+			params->freqs[num_remaining] = 0;
 		}
 		else {
-			params->freqs = os_zalloc(sizeof(int) * (num_freqs_priority + 1));
-			memcpy(params->freqs, freqs_priority, sizeof(int) * (num_freqs_priority + 1));
+			params->freqs = os_zalloc(sizeof(int) * num_freqs_priority2);
+			memcpy(params->freqs, freqs_priority2, sizeof(int) * num_freqs_priority2);
+		}
+		staticprior_remaining = !staticprior_remaining;
+
+		break;
+
+	case Scan_StaticPriority25GHz:
+		wpa_printf(MSG_INFO, "Using static priority 2.4 + 5 GHz scan strategy (thesis-out)");
+
+		/** Is is the the second remaining channels scan, or the first priority scan? */
+		if (staticprior_remaining) {
+			params->freqs = os_zalloc(sizeof(int) * (num_all_channels + 1));
+			memcpy(params->freqs, all_channels, sizeof(int) * num_all_channels);
+			int num_remaining = int_set_difference(params->freqs, num_all_channels, freqs_priority2, num_freqs_priority2);
+			num_remaining = int_set_difference(params->freqs, num_remaining, freqs_priority5, num_freqs_priority5);
+			params->freqs[num_remaining] = 0;
+		}
+		else {
+			params->freqs = os_zalloc(sizeof(int) * (num_freqs_priority2 + num_freqs_priority5 + 1));
+			memcpy(params->freqs, freqs_priority2, sizeof(int) * num_freqs_priority2);
+			memcpy(&params->freqs[num_freqs_priority2], freqs_priority5, sizeof(int) * num_freqs_priority5);
 		}
 		staticprior_remaining = !staticprior_remaining;
 
 		break;
 
 	case Scan_DynamicPriority:
-		// TODO
+		// FIXME: We assume one known channel is on 2412. Dynamically determine this.
 		wpa_printf(MSG_INFO, "Using dynamic priority scan strategy (thesis-out)");
+
+		/** Is is the the second remaining channels scan, or the first priority scan? */
+		if (staticprior_remaining) {
+			params->freqs = os_zalloc(sizeof(int) * num_all_channels);
+			memcpy(params->freqs, &all_channels[1], sizeof(int) * (num_all_channels - 1));
+		}
+		else {
+			params->freqs = os_zalloc(sizeof(int) * 2);
+			params->freqs[0] = 2412;
+		}
+		staticprior_remaining = !staticprior_remaining;
+
 		break;
 	}
    
