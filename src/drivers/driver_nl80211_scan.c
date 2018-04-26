@@ -37,7 +37,7 @@ int staticprior_remaining = 0;
 int incremental_nextchan = 0;
 
 // The list of channels the scan in priority and non-priority scans
-int freqs_priority_requested[] = {2412, 2437, 2462, 5180, 0};
+int freqs_priority_requested[] = {2412, 2437, 2462, 5180, 5220, 5200, 0};
 int *freqs_priority2 = NULL;
 int num_freqs_priority2 = 0;
 int *freqs_priority5 = NULL;
