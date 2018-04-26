@@ -19,6 +19,10 @@
 #include "common/qca-vendor.h"
 #include "driver_nl80211.h"
 
+// TODO XXX: Move these variables to a global context. Android is also
+// using a p2p0 interface which seems to mess things up? Or maybe that's
+// the recent why they perform a second scan...
+
 // Should we do passive scans?
 static int scan_mode_passive = 1;
 
@@ -213,8 +217,16 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 			goto fail;
 	}
         
-	wpa_printf(MSG_INFO, "Using scan strategy %d (thesis-out)", scan_strategy);
-	switch (scan_strategy)
+	wpa_printf(MSG_INFO, "%s: Using scan strategy %d (thesis-out)", bss->ifname, scan_strategy);
+
+	// TODO FIXME: Ugly hack to try to avoid influence of the p2p0 interface on Android
+	int strategy = scan_strategy;
+	if (os_strstr(bss->ifname, "p2p")) {
+		strategy = Scan_Normal;
+		goto fail; /** Just don't scan at all because this might interfere? */
+	}
+
+	switch (strategy)
 	{
 	case Scan_Normal:
 		// Nothing to do
@@ -222,10 +234,11 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 		break;
 
 	case Scan_Incremental:
-		wpa_printf(MSG_INFO, "Using incremental scan strategy (thesis-out)");
-
 		params->freqs = os_zalloc(sizeof(int) * 2);
 		params->freqs[0] = all_channels[incremental_nextchan];
+
+		wpa_printf(MSG_INFO, "Using incremental scan strategy for channel idx %d freq %d (thesis-out)",
+			incremental_nextchan, params->freqs[0]);
 
 		// Prepare to scan next channel, or stop if we scanned them all
 		incremental_nextchan++;
